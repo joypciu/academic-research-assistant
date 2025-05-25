@@ -20,7 +20,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Page config (moved to top, no theme parameter)
+# Page config
 st.set_page_config(
     page_title="Academic Research Assistant",
     page_icon="📚",
@@ -28,36 +28,25 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS styling with dynamic theming
-def load_css(theme: str):
+# Custom CSS for modern, eye-friendly design
+def load_css():
     css = """
     <style>
     /* Import Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-    /* CSS Variables for theming */
+    /* CSS Variables for consistent theming */
     :root {
-        --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        --text-color: #1a1a1a;
-        --container-bg: rgba(255, 255, 255, 0.95);
-        --card-bg: #ffffff;
-        --meta-color: #6b7280;
-        --expander-bg: #f8fafc;
-        --expander-text: #1f2937;
-        --button-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        --button-text: #ffffff;
-    }
-
-    [data-theme="dark"] {
-        --background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-        --text-color: #e5e7eb;
-        --container-bg: rgba(31, 41, 55, 0.95);
-        --card-bg: #374151;
-        --meta-color: #d1d5db;
-        --expander-bg: #4b5563;
-        --expander-text: #e5e7eb;
-        --button-bg: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        --button-text: #e5e7eb;
+        --background: #FFFFFF;
+        --text-color: #1A1A1A;
+        --container-bg: #F9FAFB;
+        --card-bg: #FFFFFF;
+        --meta-color: #6B7280;
+        --expander-bg: #F8FAFC;
+        --expander-text: #1F2937;
+        --button-bg: #667EEA;
+        --button-text: #FFFFFF;
+        --accent-color: #667EEA;
     }
 
     /* Main app styling */
@@ -84,15 +73,14 @@ def load_css(theme: str):
     }
 
     .main-header h1 {
-        color: #ffffff;
+        color: var(--accent-color);
         font-weight: 700;
         font-size: 3rem;
         margin-bottom: 0.5rem;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
     }
 
     .main-header p {
-        color: #e5e7eb;
+        color: var(--meta-color);
         font-size: 1.2rem;
         font-weight: 400;
     }
@@ -106,7 +94,7 @@ def load_css(theme: str):
 
     /* Upload area */
     .upload-container {
-        border: 2px dashed #e5e7eb;
+        border: 2px dashed #E5E7EB;
         border-radius: 12px;
         padding: 2rem;
         text-align: center;
@@ -116,35 +104,35 @@ def load_css(theme: str):
     }
 
     .upload-container:hover {
-        border-color: #3b82f6;
-        background: #eff6ff;
+        border-color: var(--accent-color);
+        background: #EFF6FF;
     }
 
     /* Cards */
     .info-card {
-        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
         border-radius: 12px;
         padding: 1.5rem;
         margin: 1rem 0;
-        border-left: 4px solid #0ea5e9;
+        border-left: 4px solid var(--accent-color);
         color: var(--text-color);
     }
 
     .success-card {
-        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
         border-radius: 12px;
         padding: 1.5rem;
         margin: 1rem 0;
-        border-left: 4px solid #22c55e;
+        border-left: 4px solid #22C55E;
         color: var(--text-color);
     }
 
     .warning-card {
-        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
         border-radius: 12px;
         padding: 1.5rem;
         margin: 1rem 0;
-        border-left: 4px solid #f59e0b;
+        border-left: 4px solid #F59E0B;
         color: var(--text-color);
     }
 
@@ -195,14 +183,14 @@ def load_css(theme: str):
         border-radius: 8px;
         padding: 1rem;
         margin: 0.5rem 0;
-        border-left: 3px solid #3b82f6;
+        border-left: 3px solid var(--accent-color);
         background: var(--card-bg);
         color: var(--text-color);
     }
 
     .source-title {
         font-weight: 600;
-        color: #1e40af;
+        color: var(--accent-color);
         margin-bottom: 0.5rem;
     }
 
@@ -219,9 +207,8 @@ def load_css(theme: str):
     /* Footer */
     .footer-container {
         text-align: center;
-        color: #ffffff;
+        color: var(--meta-color);
         padding: 2rem;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
     }
 
     /* Hide Streamlit branding */
@@ -229,12 +216,8 @@ def load_css(theme: str):
     footer {visibility: hidden;}
     header {visibility: hidden;}
     </style>
-    <script>
-        document.body.setAttribute('data-theme', '""" + theme + """');
-        localStorage.setItem('theme', '""" + theme + """');
-    </script>
     """
-    st.markdown(css, unsafe_allow_html=True, key=f"theme_{theme}_{int(time.time())}")
+    st.markdown(css, unsafe_allow_html=True)
 
 def initialize_session_state():
     """Initialize session state variables"""
@@ -243,7 +226,6 @@ def initialize_session_state():
         'processed_papers': {},
         'chat_history': [],
         'processing_status': None,
-        'theme': 'light'
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -276,7 +258,7 @@ def display_year_chart(papers_overview):
             x='Year',
             y='Number of Papers',
             title="Publication Years Distribution",
-            color_discrete_sequence=['#667eea'],
+            color_discrete_sequence=['#667EEA'],
             template='plotly_white'
         )
         fig.update_layout(
@@ -299,7 +281,7 @@ def display_paper_stats():
     with col1:
         st.markdown(f"""
         <div class="metric-container">
-            <h3 style="color: #3b82f6; margin: 0;">📄</h3>
+            <h3 style="color: var(--accent-color); margin: 0;">📄</h3>
             <h2 style="margin: 0;">{len(papers_overview)}</h2>
             <p style="color: var(--meta-color); margin: 0;">Papers Loaded</p>
         </div>
@@ -413,13 +395,13 @@ def display_chat_message(message):
     else:
         st.markdown(f"""
         <div style="display: flex; justify-content: flex-start; margin-bottom: 1rem;">
-            <div style="background: var(--card-bg); border: 1px solid #e5e7eb; 
+            <div style="background: var(--card-bg); border: 1px solid #E5E7EB; 
                         padding: 1rem; border-radius: 18px 18px 18px 4px; 
                         max-width: 80%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
                         color: var(--text-color);">
                 <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                     <span style="font-size: 1.2rem; margin-right: 0.5rem;">🤖</span>
-                    <strong style="color: #3b82f6;">Research Assistant</strong>
+                    <strong style="color: var(--accent-color);">Research Assistant</strong>
                     <span style="margin-left: auto; font-size: 0.8rem; color: var(--meta-color);">
                         {message['retrieved_chunks']} sources analyzed | {timestamp}
                     </span>
@@ -451,8 +433,8 @@ def main():
     # Initialize session state
     initialize_session_state()
     
-    # Load CSS with current theme
-    load_css(st.session_state.theme)
+    # Load custom CSS
+    load_css()
     
     # Create RAG pipeline
     rag_pipeline = create_rag_pipeline()
@@ -460,23 +442,6 @@ def main():
     # Sidebar
     with st.sidebar:
         st.markdown("### 🛠️ Controls")
-        
-        # Theme toggle
-        st.markdown("#### 🎨 Theme")
-        new_theme = st.selectbox("Select Theme", ["Light", "Dark"], 
-                                index=0 if st.session_state.theme.lower() == 'light' else 1,
-                                key="theme_selector",
-                                help="Switch between light and dark modes")
-        if new_theme.lower() != st.session_state.theme.lower():
-            st.session_state.theme = new_theme.lower()
-            load_css(new_theme.lower())
-            st.rerun()
-        
-        # Cache clear button
-        if st.button("🧹 Clear Cache & Refresh", help="Clear cache to ensure styles apply"):
-            st.cache_data.clear()
-            st.cache_resource.clear()
-            st.rerun()
         
         # File uploader
         st.markdown("#### 📤 Upload Research Papers")
