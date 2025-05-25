@@ -4,11 +4,13 @@ from typing import List, Dict, Tuple
 import logging
 from .vector_store import FAISSVectorStore
 from .utils import load_sample_questions
+from ..config import config  # Import the config
+import time
 
 logger = logging.getLogger(__name__)
 
+
 class ResearchRAGPipeline:
-    # Define prompt templates for generating section-specific research questions
     PROMPT_TEMPLATES = {
         "Abstract": "Based on the following abstracts from multiple research papers, suggest a research question that captures the main focus of these studies.",
         "Methodology": "Based on the following methodology descriptions from multiple research papers, suggest a research question that compares or analyzes the different approaches used.",
@@ -17,11 +19,11 @@ class ResearchRAGPipeline:
     }
 
     def __init__(self, api_key: str):
-        self.client = genai.Client(api_key=api_key)
+        self.client = genai.GenerativeModel(config.gemini_model)  # Use model from config
         self.vector_store = FAISSVectorStore()
         self._cached_suggestions = None
-        self._knowledge_base_version = 0  # Track changes to knowledge base
-        self._cached_version = -1  # Track when suggestions were last generated
+        self._knowledge_base_version = 0
+        self._cached_version = -1
 
     def add_papers(self, documents: List) -> None:
         """Add research papers to the knowledge base"""
@@ -66,8 +68,6 @@ QUERY: {query}
 ANSWER:"""
 
     def query(self, question: str, k: int = 5, filter_section: str = None) -> Dict:
-        """Query the research paper knowledge base with retry logic"""
-        import time
         max_retries = 3
         retry_delay = 1
         
@@ -87,16 +87,15 @@ ANSWER:"""
                 context = self.create_research_context(retrieved_docs, question)
                 prompt = self.generate_research_prompt(question, context)
                 
-                config = types.GenerateContentConfig(
-                    max_output_tokens=800,
-                    temperature=0.3,
-                    top_p=0.8
+                config = types.GenerationConfig(
+                    max_output_tokens=config.max_output_tokens,  # Use config values
+                    temperature=config.temperature,
+                    top_p=config.top_p
                 )
                 
-                response = self.client.models.generate_content(
-                    model="gemini-1.5-flash",
+                response = self.client.generate_content(
                     contents=prompt,
-                    config=config
+                    generation_config=config
                 )
                 
                 sources = [
@@ -141,13 +140,10 @@ ANSWER:"""
 
     def suggest_research_questions(self) -> List[str]:
         """Generate dynamic research questions based on uploaded PDFs"""
-        # Check if cached suggestions are valid
-        # if self._cached_suggestions is not None and self._cached_version == self._knowledge_base_version:
-        #     return self._cached_suggestions
+        if self._cached_suggestions is not None and self._cached_version == self._knowledge_base_version:
+            return self._cached_suggestions
 
         suggested_questions = []
-
-        # Generate questions for each key section
         for section, template in self.PROMPT_TEMPLATES.items():
             snippets = []
             for source in set(doc.metadata['source'] for doc in self.vector_store.documents):
@@ -168,15 +164,14 @@ ANSWER:"""
                 logger.info(f"Generating question for {section} with prompt: {prompt[:100]}...")
                 
                 try:
-                    config = types.GenerateContentConfig(
+                    config = types.GenerationConfig(
                         max_output_tokens=100,
                         temperature=0.7,
                         top_p=0.8
                     )
-                    response = self.client.models.generate_content(
-                        model="gemini-3-12b-it",
+                    response = self.client.generate_content(
                         contents=prompt,
-                        config=config
+                        generation_config=config
                     )
                     question = response.text.strip()
                     if question:
@@ -184,9 +179,9 @@ ANSWER:"""
                         logger.info(f"Generated question for {section}: {question}")
                 except Exception as e:
                     logger.error(f"Error generating question for section {section}: {e}")
+                    import streamlit as st
+                    st.error(f"Failed to generate question for {section}: {str(e)}")
 
-        # Cache the new suggestions
         self._cached_suggestions = suggested_questions
         self._cached_version = self._knowledge_base_version
-
         return suggested_questions
