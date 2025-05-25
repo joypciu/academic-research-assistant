@@ -607,7 +607,7 @@ def main():
     st.markdown("""
     <div class="footer-container">
         <p>Built with ❤️ using Streamlit, LangChain, FAISS, and Gemma API</p>
-        <p>Perfect for researchers, students, and anyone working with academic literature</p>
+        <p>Made by Usman Gani Joy 👨‍💻. Orcid Link: https://orcid.org/0009-0003-9498-3828</p>
     </div>
     """, unsafe_allow_html=True)
 
