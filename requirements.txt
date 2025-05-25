@@ -21,3 +21,6 @@ pandas>=2.0.0
 # Utilities
 typing-extensions>=4.5.0
 
+# adding plotly
+plotly >= 6.1.1
+

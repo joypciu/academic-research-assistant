@@ -3,7 +3,6 @@ from google.genai import types
 from typing import List, Dict, Tuple
 import logging
 from .vector_store import FAISSVectorStore
-import streamlit as st
 from .utils import load_sample_questions
 
 logger = logging.getLogger(__name__)
@@ -13,10 +12,13 @@ class ResearchRAGPipeline:
         self.client = genai.Client(api_key=api_key)
         self.vector_store = FAISSVectorStore()
         self._cached_suggestions = None
+        self._knowledge_base_version = 0  # Track changes to knowledge base
     
     def add_papers(self, documents: List) -> None:
         """Add research papers to the knowledge base"""
         self.vector_store.add_documents(documents)
+        self._knowledge_base_version += 1  # Invalidate suggestions cache
+        self._cached_suggestions = None
     
     def create_research_context(self, retrieved_docs: List[Tuple], query: str) -> str:
         """Create context from retrieved documents"""
@@ -125,11 +127,12 @@ ANSWER:"""
     def clear_knowledge_base(self) -> None:
         """Clear all papers from the knowledge base"""
         self.vector_store.clear()
+        self._knowledge_base_version += 1
+        self._cached_suggestions = None
     
-    @st.cache_data
     def suggest_research_questions(self) -> List[str]:
         """Suggest relevant research questions"""
-        if self._cached_suggestions is None:
+        if self._cached_suggestions is None or self._knowledge_base_version > 0:
             papers_summary = self.get_papers_overview()
             if not papers_summary:
                 self._cached_suggestions = []

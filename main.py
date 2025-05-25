@@ -6,8 +6,7 @@ import logging
 from dotenv import load_dotenv
 import time
 import pandas as pd
-import json
-import time
+import plotly.express as px
 
 # Import custom modules
 from src.document_processor import AcademicPaperProcessor
@@ -42,8 +41,6 @@ def load_css(theme: str = "Light"):
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: #1a1a1a;
     }
-
-    /* Theme-aware adjustments */
     """
     if theme == "Dark":
         css += """
@@ -263,39 +260,26 @@ def create_rag_pipeline():
         st.stop()
 
 def display_year_chart(papers_overview):
-    """Display bar chart of publication years"""
+    """Display bar chart of publication years using Plotly"""
     years = [paper['year'] for paper in papers_overview.values() if paper['year'] != 'Unknown']
     if years:
         year_counts = pd.Series(years).value_counts().sort_index()
-        st.markdown("### Publication Years Distribution")
-        st.markdown(f"""
-        ```chartjs
-        {{
-            "type": "bar",
-            "data": {{
-                "labels": {json.dumps(year_counts.index.tolist())},
-                "datasets": [{{
-                    "label": "Number of Papers",
-                    "data": {json.dumps(year_counts.values.tolist())},
-                    "backgroundColor": "#667eea",
-                    "borderColor": "#3b82f6",
-                    "borderWidth": 1
-                }}]
-            }},
-            "options": {{
-                "scales": {{
-                    "y": {{
-                        "beginAtZero": true,
-                        "title": {{ "display": true, "text": "Number of Papers" }}
-                    }},
-                    "x": {{
-                        "title": {{ "display": true, "text": "Publication Year" }}
-                    }}
-                }}
-            }}
-        }}
-        ```
-        """, unsafe_allow_html=True)
+        df = pd.DataFrame({'Year': year_counts.index, 'Number of Papers': year_counts.values})
+        fig = px.bar(
+            df,
+            x='Year',
+            y='Number of Papers',
+            title="Publication Years Distribution",
+            color_discrete_sequence=['#667eea'],
+            template='plotly_white'
+        )
+        fig.update_layout(
+            xaxis_title="Publication Year",
+            yaxis_title="Number of Papers",
+            yaxis=dict(tickmode='linear'),
+            showlegend=False
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
 def display_paper_stats():
     """Display statistics about processed papers"""
@@ -460,6 +444,9 @@ def main():
     # Initialize session state
     initialize_session_state()
     
+    # Load CSS with current theme
+    load_css(st.session_state.theme)
+    
     # Create RAG pipeline
     rag_pipeline = create_rag_pipeline()
     
@@ -469,9 +456,10 @@ def main():
         
         # Theme toggle
         st.markdown("#### 🎨 Theme")
-        theme = st.selectbox("Select Theme", ["Light", "Dark"], key="theme_selector")
-        load_css(theme)
-        st.session_state.theme = theme
+        new_theme = st.selectbox("Select Theme", ["Light", "Dark"], index=0 if st.session_state.theme == "Light" else 1, key="theme_selector")
+        if new_theme != st.session_state.theme:
+            st.session_state.theme = new_theme
+            st.rerun()
         
         # File uploader
         st.markdown("#### 📤 Upload Research Papers")
@@ -555,7 +543,6 @@ def main():
         st.markdown("#### 📢 Feedback")
         feedback = st.text_area("Share your feedback", key="feedback_input", help="Let us know how we can improve!")
         if st.button("Submit Feedback", help="Submit your feedback"):
-            # Placeholder for feedback storage (e.g., save to file or database)
             with open("feedback.txt", "a") as f:
                 f.write(f"[{format_timestamp(time.time())}] {feedback}\n")
             st.success("Thank you for your feedback!")
