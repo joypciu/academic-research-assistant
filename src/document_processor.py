@@ -4,10 +4,23 @@ from typing import List, Dict, Tuple
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 import logging
-import spacy
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import nltk
+from nltk import word_tokenize, pos_tag, ne_chunk
+from nltk.data import find
 
 logger = logging.getLogger(__name__)
+
+# Download required NLTK data
+try:
+    find('tokenizers/punkt')
+    find('taggers/averaged_perceptron_tagger')
+    find('chunkers/maxent_ne_chunker')
+    find('corpora/words')
+except LookupError:
+    nltk.download('punkt')
+    nltk.download('averaged_perceptron_tagger')
+    nltk.download('maxent_ne_chunker')
+    nltk.download('words')
 
 class AcademicPaperProcessor:
     def __init__(self):
@@ -16,30 +29,36 @@ class AcademicPaperProcessor:
             chunk_overlap=200,
             separators=["\n\n", "\n", ". ", " ", ""]
         )
-        try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except:
-            logger.warning("spaCy model not found. Install with: pip install spacy && python -m spacy download en_core_web_sm")
-            self.nlp = None
-    
+
     def extract_metadata_from_text(self, text: str) -> Dict:
-        """Extract paper metadata like title, authors, year using spaCy"""
+        """Extract paper metadata like title, authors, year using NLTK"""
         metadata = {}
         
-        # Extract title (first non-empty line in first 10 lines)
+        # Extract title (first non-empty line in first 10 lines, longest line)
         lines = [line.strip() for line in text.split('\n')[:10] if line.strip()]
         metadata['title'] = max(lines, key=len, default="Unknown Title")[:100]
         
-        # Extract year
+        # Extract year (search for a 4-digit year between 1900 and 2099)
         year_match = re.search(r'(19|20)\d{2}', text[:2000])
         metadata['year'] = year_match.group() if year_match else "Unknown"
         
-        # Extract authors with spaCy
+        # Extract authors using NLTK NER
         authors = []
-        if self.nlp:
-            doc = self.nlp(text[:1000])
-            authors = [ent.text for ent in doc.ents if ent.label_ == "PERSON"][:3]
-        else:
+        try:
+            # Tokenize and tag the first 1000 characters
+            tokens = word_tokenize(text[:1000])
+            pos_tags = pos_tag(tokens)
+            # Perform NER to identify person names
+            tree = ne_chunk(pos_tags)
+            for subtree in tree:
+                if isinstance(subtree, nltk.Tree) and subtree.label() == 'PERSON':
+                    author_name = ' '.join(leaf[0] for leaf in subtree.leaves())
+                    authors.append(author_name)
+            # Limit to first 3 authors
+            metadata['authors'] = ', '.join(authors[:3]) if authors else "Unknown Authors"
+        except Exception as e:
+            logger.warning(f"NLTK NER failed: {e}")
+            # Fallback to regex for author names
             author_patterns = [
                 r'([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
                 r'([A-Z]\.\s*[A-Z][a-z]+)'
@@ -47,10 +66,10 @@ class AcademicPaperProcessor:
             for pattern in author_patterns:
                 matches = re.findall(pattern, text[:1000])
                 authors.extend(matches[:3])
-        metadata['authors'] = ', '.join(authors[:3]) if authors else "Unknown Authors"
+            metadata['authors'] = ', '.join(authors[:3]) if authors else "Unknown Authors"
         
         return metadata
-    
+
     def identify_sections(self, text: str) -> List[Tuple[str, int, int]]:
         """Identify paper sections and their positions"""
         sections = []
@@ -73,8 +92,9 @@ class AcademicPaperProcessor:
                 sections.append((section_name, match.start(), match.end()))
         
         sections.sort(key=lambda x: x[1])
+        logger.info(f"Identified sections: {sections}")
         return sections
-    
+
     def process_pdf(self, pdf_file, filename: str) -> List[Document]:
         """Process a single PDF and return structured documents with metadata"""
         try:
@@ -124,7 +144,7 @@ class AcademicPaperProcessor:
         except Exception as e:
             logger.error(f"Error processing PDF {filename}: {str(e)}")
             return []
-    
+
     def process_pdfs_parallel(self, pdf_files: List, filenames: List[str]) -> List[Document]:
         """Process multiple PDFs in parallel"""
         documents = []
@@ -136,5 +156,5 @@ class AcademicPaperProcessor:
                     docs = future.result()
                     documents.extend(docs)
                 except Exception as e:
-                    logger.error(f"Error processing file {future_to_file[future]}: {str(e)}")
+                    logger.error(f"Error processing file {future_to_file[future]}: {e}")
         return documents

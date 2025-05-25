@@ -9,15 +9,13 @@ langchain-community>=0.0.20
 sentence-transformers>=2.2.2
 faiss-cpu>=1.7.4
 transformers[torch]>=4.30.0
-spacy==3.7.5  # Pinned to a stable version
-en-core-web-sm@https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
-thinc==8.3.2  # Pinned to match spacy
+nltk>=3.8.1
 
 # Document processing
 pypdf>=5.0.0
 
 # Data processing
-numpy==1.26.4  # Pinned to a compatible version
+numpy==1.26.4
 pandas>=2.0.0
 
 # Utilities
