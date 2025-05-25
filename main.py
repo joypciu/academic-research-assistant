@@ -1,4 +1,3 @@
-
 import streamlit as st
 import os
 import tempfile
@@ -21,7 +20,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Page config
+# Page config (moved to top, no theme parameter)
 st.set_page_config(
     page_title="Academic Research Assistant",
     page_icon="📚",
@@ -309,7 +308,7 @@ def display_paper_stats():
     with col2:
         total_chunks = sum(paper['chunk_count'] for paper in papers_overview.values())
         st.markdown(f"""
-        <div class scale
+        <div class="metric-container">
             <h3 style="color: #10b981; margin: 0;">🧩</h3>
             <h2 style="margin: 0;">{total_chunks}</h2>
             <p style="color: var(--meta-color); margin: 0;">Text Chunks</p>
