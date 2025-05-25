@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Local configuration files
+#  These files are often used to store local settings, secrets, or environment variables.
+.env
+app.log
