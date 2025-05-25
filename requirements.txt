@@ -1,27 +1,27 @@
 # Core dependencies
-google-genai>=1.16.1
-streamlit>=1.45.1
-python-dotenv>=1.1.0
+google-generativeai>=0.8.2
+streamlit>=1.31.0
+python-dotenv>=1.0.0
 
 # RAG and NLP (CPU optimized versions)
 langchain>=0.1.0
 langchain-community>=0.0.20
 sentence-transformers>=2.2.2
 faiss-cpu>=1.7.4
-transformers[torch]>=4.30.0  # Explicitly use torch backend
-spacy >= 3.7.5
+transformers[torch]>=4.30.0
+spacy==3.7.5  # Pinned to a stable version
 en-core-web-sm@https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+thinc==8.3.2  # Pinned to match spacy
 
 # Document processing
-pypdf>=5.5.0
+pypdf>=5.0.0
 
 # Data processing
-numpy>=1.24.0
+numpy==1.26.4  # Pinned to a compatible version
 pandas>=2.0.0
 
 # Utilities
 typing-extensions>=4.5.0
 
-# adding plotly
-plotly >= 6.1.1
-
+# Plotly
+plotly>=5.15.0
