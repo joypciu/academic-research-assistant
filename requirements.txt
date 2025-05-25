@@ -9,6 +9,7 @@ langchain-community>=0.0.20
 sentence-transformers>=2.2.2
 faiss-cpu>=1.7.4
 transformers[torch]>=4.30.0  # Explicitly use torch backend
+spacy >= 3.8.7
 
 # Document processing
 pypdf>=5.5.0
