@@ -20,47 +20,28 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Page config
-st.set_page_config(
-    page_title="Academic Research Assistant",
-    page_icon="📚",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Page config with dynamic theme
+def set_page_config():
+    theme = st.session_state.get('theme', 'light')
+    st.set_page_config(
+        page_title="Academic Research Assistant",
+        page_icon="📚",
+        layout="wide",
+        initial_sidebar_state="expanded",
+        theme=theme.lower()
+    )
 
-# Modern CSS styling with dynamic theming
+# Simplified CSS styling
 def load_css():
     css = """
     <style>
     /* Import Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-    /* CSS Variables for theming */
-    :root {
-        --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        --text-color: #1a1a1a;
-        --container-bg: rgba(255, 255, 255, 0.95);
-        --card-bg: #ffffff;
-        --meta-color: #6b7280;
-        --expander-bg: #f8fafc;
-        --expander-text: #1f2937;
-    }
-
-    [data-theme="dark"] {
-        --background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-        --text-color: #e5e7eb;
-        --container-bg: rgba(31, 41, 55, 0.95);
-        --card-bg: #374151;
-        --meta-color: #d1d5db;
-        --expander-bg: #4b5563;
-        --expander-text: #e5e7eb;
-    }
-
     /* Main app styling */
     .stApp {
         font-family: 'Inter', sans-serif;
-        background: var(--background);
-        color: var(--text-color);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
 
     /* Main container */
@@ -70,7 +51,7 @@ def load_css():
         margin: 1rem 0;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         backdrop-filter: blur(10px);
-        background: var(--container-bg);
+        background: rgba(255, 255, 255, 0.95);
     }
 
     /* Header styling */
@@ -95,7 +76,7 @@ def load_css():
 
     /* Sidebar styling */
     .sidebar .sidebar-content {
-        background: var(--container-bg);
+        background: rgba(255, 255, 255, 0.95);
         border-radius: 15px;
         padding: 1rem;
     }
@@ -107,7 +88,7 @@ def load_css():
         padding: 2rem;
         text-align: center;
         margin: 1rem 0;
-        background: var(--card-bg);
+        background: #f9fafb;
         transition: all 0.3s ease;
     }
 
@@ -123,7 +104,6 @@ def load_css():
         padding: 1.5rem;
         margin: 1rem 0;
         border-left: 4px solid #0ea5e9;
-        color: #1f2937;
     }
 
     .success-card {
@@ -132,7 +112,6 @@ def load_css():
         padding: 1.5rem;
         margin: 1rem 0;
         border-left: 4px solid #22c55e;
-        color: #1f2937;
     }
 
     .warning-card {
@@ -141,7 +120,6 @@ def load_css():
         padding: 1.5rem;
         margin: 1rem 0;
         border-left: 4px solid #f59e0b;
-        color: #1f2937;
     }
 
     /* Buttons */
@@ -167,8 +145,7 @@ def load_css():
         padding: 1rem;
         margin: 1rem 0;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        background: var(--card-bg);
-        color: var(--text-color);
+        background: #ffffff;
     }
 
     /* Metrics */
@@ -177,8 +154,7 @@ def load_css():
         padding: 1rem;
         text-align: center;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        background: var(--card-bg);
-        color: var(--text-color);
+        background: #ffffff;
     }
 
     /* Progress bar */
@@ -192,24 +168,13 @@ def load_css():
         padding: 1rem;
         margin: 0.5rem 0;
         border-left: 3px solid #3b82f6;
-        background: var(--card-bg);
-        color: var(--text-color);
+        background: #ffffff;
     }
 
     .source-title {
         font-weight: 600;
         color: #1e40af;
         margin-bottom: 0.5rem;
-    }
-
-    .source-meta {
-        color: var(--meta-color);
-    }
-
-    /* Expander */
-    .streamlit-expanderHeader {
-        background: var(--expander-bg);
-        color: var(--expander-text);
     }
 
     /* Footer */
@@ -226,19 +191,7 @@ def load_css():
     header {visibility: hidden;}
     </style>
     """
-    # JavaScript to toggle theme dynamically
-    js = f"""
-    <script>
-        function setTheme(theme) {{
-            document.body.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-        }}
-        // Apply saved theme or default to light
-        const savedTheme = localStorage.getItem('theme') || '{st.session_state.get('theme', 'light')}';
-        setTheme(savedTheme);
-    </script>
-    """
-    st.markdown(css + js, unsafe_allow_html=True, key=f"css_{st.session_state.get('theme', 'light')}")
+    st.markdown(css, unsafe_allow_html=True, key=f"css_{st.session_state.theme}_{int(time.time())}")
 
 def initialize_session_state():
     """Initialize session state variables"""
@@ -305,7 +258,7 @@ def display_paper_stats():
         <div class="metric-container">
             <h3 style="color: #3b82f6; margin: 0;">📄</h3>
             <h2 style="margin: 0;">{len(papers_overview)}</h2>
-            <p style="color: var(--meta-color); margin: 0;">Papers Loaded</p>
+            <p style="color: #6b7280; margin: 0;">Papers Loaded</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -315,7 +268,7 @@ def display_paper_stats():
         <div class="metric-container">
             <h3 style="color: #10b981; margin: 0;">🧩</h3>
             <h2 style="margin: 0;">{total_chunks}</h2>
-            <p style="color: var(--meta-color); margin: 0;">Text Chunks</p>
+            <p style="color: #6b7280; margin: 0;">Text Chunks</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -327,7 +280,7 @@ def display_paper_stats():
         <div class="metric-container">
             <h3 style="color: #f59e0b; margin: 0;">📑</h3>
             <h2 style="margin: 0;">{len(all_sections)}</h2>
-            <p style="color: var(--meta-color); margin: 0;">Unique Sections</p>
+            <p style="color: #6b7280; margin: 0;">Unique Sections</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -337,7 +290,7 @@ def display_paper_stats():
         <div class="metric-container">
             <h3 style="color: #8b5cf6; margin: 0;">📅</h3>
             <h2 style="margin: 0;">{len(years) if years else 1}</h2>
-            <p style="color: var(--meta-color); margin: 0;">Publication Years</p>
+            <p style="color: #6b7280; margin: 0;">Publication Years</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -417,14 +370,13 @@ def display_chat_message(message):
     else:
         st.markdown(f"""
         <div style="display: flex; justify-content: flex-start; margin-bottom: 1rem;">
-            <div style="background: var(--card-bg); border: 1px solid #e5e7eb; 
+            <div style="background: #ffffff; border: 1px solid #e5e7eb; 
                         padding: 1rem; border-radius: 18px 18px 18px 4px; 
-                        max-width: 80%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-                        color: var(--text-color);">
+                        max-width: 80%; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                     <span style="font-size: 1.2rem; margin-right: 0.5rem;">🤖</span>
                     <strong style="color: #3b82f6;">Research Assistant</strong>
-                    <span style="margin-left: auto; font-size: 0.8rem; color: var(--meta-color);">
+                    <span style="margin-left: auto; font-size: 0.8rem; color: #6b7280;">
                         {message['retrieved_chunks']} sources analyzed | {timestamp}
                     </span>
                 </div>
@@ -445,7 +397,7 @@ def display_chat_message(message):
                             <strong>Year:</strong> {source['year']} | 
                             <strong>Relevance:</strong> {source['relevance_score']}
                         </div>
-                        <div style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--meta-color);">
+                        <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #4b5563;">
                             {source['content_preview']}
                         </div>
                     </div>
@@ -455,7 +407,10 @@ def main():
     # Initialize session state
     initialize_session_state()
     
-    # Load CSS and JavaScript
+    # Set page config with current theme
+    set_page_config()
+    
+    # Load custom CSS
     load_css()
     
     # Create RAG pipeline
@@ -467,22 +422,19 @@ def main():
         
         # Theme toggle
         st.markdown("#### 🎨 Theme")
-        new_theme = st.radio("Select Theme", ["Light", "Dark"], 
-                           index=0 if st.session_state.theme.lower() == "light" else 1, 
-                           key="theme_selector", 
-                           help="Switch between light and dark modes")
-        if new_theme.lower() != st.session_state.theme.lower():
-            st.session_state.theme = new_theme.lower()
-            st.markdown(f"""
-            <script>
-                document.body.setAttribute('data-theme', '{new_theme.lower()}');
-                localStorage.setItem('theme', '{new_theme.lower()}');
-            </script>
-            """, unsafe_allow_html=True)
+        theme_toggle = st.toggle("Dark Mode", 
+                               value=st.session_state.theme.lower() == 'dark',
+                               key="theme_toggle",
+                               help="Toggle between light and dark modes")
+        new_theme = 'dark' if theme_toggle else 'light'
+        if new_theme != st.session_state.theme:
+            st.session_state.theme = new_theme
             st.rerun()
         
-        # Fallback refresh button
-        if st.button("🔄 Refresh Theme", help="Force refresh if theme doesn't apply"):
+        # Cache clear button
+        if st.button("🧹 Clear Cache & Refresh", help="Clear cache to ensure styles apply"):
+            st.cache_data.clear()
+            st.cache_resource.clear()
             st.rerun()
         
         # File uploader

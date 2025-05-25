@@ -1,0 +1,15 @@
+[theme]
+base = "light"
+primaryColor = "#667eea"
+backgroundColor = "#f9fafb"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#1a1a1a"
+font = "Inter"
+
+[theme.dark]
+base = "dark"
+primaryColor = "#764ba2"
+backgroundColor = "#1f2937"
+secondaryBackgroundColor = "#374151"
+textColor = "#e5e7eb"
+font = "Inter"
