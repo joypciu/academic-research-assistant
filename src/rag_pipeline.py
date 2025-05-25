@@ -2,7 +2,8 @@ from google import genai
 from google.genai import types
 from typing import List, Dict, Tuple
 import logging
-import random
+from .vector_store import FAISSVectorStore
+from .utils import load_sample_questions
 
 logger = logging.getLogger(__name__)
 
@@ -130,93 +131,11 @@ ANSWER:"""
         self._cached_suggestions = None
     
     def suggest_research_questions(self) -> List[str]:
-        """Generate relevant research questions dynamically based on uploaded papers"""
-        if self._cached_suggestions is not None and self._knowledge_base_version == 0:
-            logger.debug("Returning cached research questions")
-            return self._cached_suggestions
-        
-        papers_summary = self.get_papers_overview()
-        if not papers_summary:
-            logger.warning("No papers available for generating research questions")
-            self._cached_suggestions = []
-            return self._cached_suggestions
-        
-        # Create a summary of papers for the prompt
-        paper_summaries = []
-        for filename, info in papers_summary.items():
-            paper_summary = f"Title: {info['title']}\nAuthors: {info['authors']}\nYear: {info['year']}\nSections: {', '.join(info['sections'])}\n"
-            # Sample a few document chunks to get content insights (e.g., from Abstract or Introduction)
-            docs = [doc for doc in self.vector_store.documents if doc.metadata.get('source') == filename and doc.metadata.get('source')]
-            if docs:
-                abstract_docs = [doc for doc in docs if doc.metadata.get('section') == 'Abstract' or doc.metadata.get('section') == 'Introduction'][:2]
-                if abstract_docs:
-                    paper_summary += "Content Excerpt: " + " ".join([doc.page_content[:200] for doc in abstract_docs]) + "\n"
-            paper_summaries.append(paper_summary)
-        
-        context = "\n".join(paper_summaries) if paper_summaries else "No papers available."
-        
-        # Prompt for generating research questions
-        prompt = f"""You are an AI research assistant tasked with generating insightful research questions based on a collection of academic papers.
-INSTRUCTIONS:
-- Generate 5-10 specific, relevant research questions based on the provided paper summaries.
-- Focus on questions that encourage comparison, analysis of methodologies, identification of research gaps, evaluation of results, or exploration of datasets and contributions.
-- Ensure questions are concise, academically rigorous, and tailored to the provided papers.
-- Avoid generic questions; make them specific to the papers' content or metadata (e.g., titles, authors, years, sections).
-- Format the output as a numbered list (e.g., 1. Question...).
-
-PAPER SUMMARIES:
-{context}
-
-OUTPUT:
-"""
-        
-        try:
-            config = types.GenerateContentConfig(
-                max_output_tokens=1000,
-                temperature=0.5,
-                top_p=0.9
-            )
-            
-            response = self.client.models.generate_content(
-                model="gemini-1.5-flash",
-                contents=prompt,
-                config=config
-            )
-            
-            # Parse the response into a list of questions
-            questions = []
-            lines = response.text.split("\n")
-            for line in lines:
-                line = line.strip()
-                if line and line[0].isdigit() and "." in line:
-                    question = line[line.find(".") + 1:].strip()
-                    if question and question not in questions:  # Avoid duplicates
-                        questions.append(question)
-                elif line and not line[0].isdigit() and any(kw in line.lower() for kw in ["question", "what", "how", "compare"]):
-                    # Handle cases where numbering might be missing
-                    questions.append(line.strip())
-            
-            self._cached_suggestions = questions[:10]  # Limit to 10 questions
-            if not self._cached_suggestions:
-                logger.warning("No valid questions generated, using fallback")
-                self._cached_suggestions = [
-                    "What methodologies are used across these papers?",
-                    "Compare the evaluation metrics used in these studies",
-                    "What datasets were used for experiments?",
-                    "What are the main contributions of each paper?",
-                    "Identify research gaps mentioned in the papers"
-                ]
-            self._knowledge_base_version = 0  # Reset to allow caching until new papers are added
-            logger.info(f"Generated {len(self._cached_suggestions)} research questions: {self._cached_suggestions}")
-            return self._cached_suggestions
-        
-        except Exception as e:
-            logger.error(f"Error generating research questions: {str(e)}")
-            self._cached_suggestions = [
-                "What methodologies are used across these papers?",
-                "Compare the evaluation metrics used in these studies",
-                "What datasets were used for experiments?",
-                "What are the main contributions of each paper?",
-                "Identify research gaps mentioned in the papers"
-            ]
-            return self._cached_suggestions
+        """Suggest relevant research questions"""
+        if self._cached_suggestions is None or self._knowledge_base_version > 0:
+            papers_summary = self.get_papers_overview()
+            if not papers_summary:
+                self._cached_suggestions = []
+            else:
+                self._cached_suggestions = load_sample_questions()
+        return self._cached_suggestions

@@ -11,7 +11,7 @@ class AppConfig:
     
     # Model Configuration
     embedding_model: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-    gemini_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemma-3-27b-it"
     
     # Text Processing
     max_chunk_size: int = int(os.getenv("MAX_CHUNK_SIZE", "1000"))
