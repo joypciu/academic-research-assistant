@@ -142,15 +142,14 @@ ANSWER:"""
     def suggest_research_questions(self) -> List[str]:
         """Generate dynamic research questions based on uploaded PDFs"""
         # Check if cached suggestions are valid
-        if self._cached_suggestions is not None and self._cached_version == self._knowledge_base_version:
-            return self._cached_suggestions
+        # if self._cached_suggestions is not None and self._cached_version == self._knowledge_base_version:
+        #     return self._cached_suggestions
 
         suggested_questions = []
 
         # Generate questions for each key section
         for section, template in self.PROMPT_TEMPLATES.items():
             snippets = []
-            # Get unique papers
             for source in set(doc.metadata['source'] for doc in self.vector_store.documents):
                 section_chunks = [
                     doc for doc in self.vector_store.documents
@@ -160,6 +159,8 @@ ANSWER:"""
                     snippet = section_chunks[0].page_content[:200]
                     snippets.append(f"Paper: {source}\n{snippet}\n")
                     logger.info(f"Collected snippet for section {section} from {source}")
+                else:
+                    logger.info(f"No snippets found for section {section} in {source}")
 
             if snippets:
                 context = "\n".join(snippets)
