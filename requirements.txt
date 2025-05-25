@@ -20,5 +20,3 @@ pandas>=2.0.0
 # Utilities
 typing-extensions>=4.5.0
 
-# Explicitly avoid TensorFlow
---no-deps tensorflow
