@@ -56,6 +56,31 @@ def load_css():
         color: var(--text-color);
     }
 
+    .suggested-questions {
+        background: #F9FAFB;  /* Light gray background */
+        color: #1A1A1A;       /* Dark text */
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+    .suggested-questions h3 {
+        color: #667EEA;       /* Blue heading */
+        margin-bottom: 1rem;
+    }
+    .suggested-questions button {
+        background: #EFF6FF;  /* Light blue button */
+        color: #1F2937;       /* Dark gray text */
+        border: 1px solid #E5E7EB;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        margin: 0.25rem;
+        transition: all 0.3s ease;
+    }
+    .suggested-questions button:hover {
+        background: #DBEAFE;  /* Lighter blue on hover */
+        transform: translateY(-2px);
+    }
+
     /* Main container */
     .main-container {
         border-radius: 20px;
