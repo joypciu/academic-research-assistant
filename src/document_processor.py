@@ -4,6 +4,8 @@ from typing import List, Dict, Tuple
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 import logging
+import spacy
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
 
@@ -14,29 +16,37 @@ class AcademicPaperProcessor:
             chunk_overlap=200,
             separators=["\n\n", "\n", ". ", " ", ""]
         )
+        try:
+            self.nlp = spacy.load("en_core_web_sm")
+        except:
+            logger.warning("spaCy model not found. Install with: pip install spacy && python -m spacy download en_core_web_sm")
+            self.nlp = None
     
     def extract_metadata_from_text(self, text: str) -> Dict:
-        """Extract paper metadata like title, authors, year"""
+        """Extract paper metadata like title, authors, year using spaCy"""
         metadata = {}
         
-        # Extract title (usually first few lines)
-        lines = text.split('\n')[:10]
-        potential_title = max(lines, key=len) if lines else "Unknown Title"
-        metadata['title'] = potential_title[:100]
+        # Extract title (first non-empty line in first 10 lines)
+        lines = [line.strip() for line in text.split('\n')[:10] if line.strip()]
+        metadata['title'] = max(lines, key=len, default="Unknown Title")[:100]
         
         # Extract year
         year_match = re.search(r'(19|20)\d{2}', text[:2000])
         metadata['year'] = year_match.group() if year_match else "Unknown"
         
-        # Extract authors (simple heuristic)
-        author_patterns = [
-            r'([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
-            r'([A-Z]\.\s*[A-Z][a-z]+)'
-        ]
+        # Extract authors with spaCy
         authors = []
-        for pattern in author_patterns:
-            matches = re.findall(pattern, text[:1000])
-            authors.extend(matches[:3])  # Take first 3 matches
+        if self.nlp:
+            doc = self.nlp(text[:1000])
+            authors = [ent.text for ent in doc.ents if ent.label_ == "PERSON"][:3]
+        else:
+            author_patterns = [
+                r'([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
+                r'([A-Z]\.\s*[A-Z][a-z]+)'
+            ]
+            for pattern in author_patterns:
+                matches = re.findall(pattern, text[:1000])
+                authors.extend(matches[:3])
         metadata['authors'] = ', '.join(authors[:3]) if authors else "Unknown Authors"
         
         return metadata
@@ -62,43 +72,37 @@ class AcademicPaperProcessor:
             for match in matches:
                 sections.append((section_name, match.start(), match.end()))
         
-        # Sort by position
         sections.sort(key=lambda x: x[1])
         return sections
     
     def process_pdf(self, pdf_file, filename: str) -> List[Document]:
-        """Process PDF and return structured documents with metadata"""
+        """Process a single PDF and return structured documents with metadata"""
         try:
-            # pdf_reader = PyPDF2.PdfReader(pdf_file)
             pdf_reader = pypdf.PdfReader(pdf_file)
             text = ""
             
-            # Extract text from all pages
             for page in pdf_reader.pages:
-                text += page.extract_text() + "\n"
+                extracted = page.extract_text()
+                if extracted:
+                    text += extracted + "\n"
             
             if not text.strip():
                 logger.warning(f"No text extracted from {filename}")
                 return []
             
-            # Extract metadata
             paper_metadata = self.extract_metadata_from_text(text)
             paper_metadata['source'] = filename
             paper_metadata['total_pages'] = len(pdf_reader.pages)
             
-            # Identify sections
             sections = self.identify_sections(text)
-            
-            # Create chunks with section awareness
             documents = []
             chunks = self.text_splitter.split_text(text)
             
             for i, chunk in enumerate(chunks):
-                # Determine which section this chunk belongs to
                 chunk_start = text.find(chunk)
                 current_section = "Unknown"
                 
-                for section_name, start, end in sections:
+                for section_name, start, _ in sections:
                     if start <= chunk_start:
                         current_section = section_name
                 
@@ -120,3 +124,17 @@ class AcademicPaperProcessor:
         except Exception as e:
             logger.error(f"Error processing PDF {filename}: {str(e)}")
             return []
+    
+    def process_pdfs_parallel(self, pdf_files: List, filenames: List[str]) -> List[Document]:
+        """Process multiple PDFs in parallel"""
+        documents = []
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            future_to_file = {executor.submit(self.process_pdf, pdf_file, filename): filename 
+                            for pdf_file, filename in zip(pdf_files, filenames)}
+            for future in as_completed(future_to_file):
+                try:
+                    docs = future.result()
+                    documents.extend(docs)
+                except Exception as e:
+                    logger.error(f"Error processing file {future_to_file[future]}: {str(e)}")
+        return documents
