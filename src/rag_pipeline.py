@@ -132,10 +132,12 @@ ANSWER:"""
     def suggest_research_questions(self) -> List[str]:
         """Generate relevant research questions dynamically based on uploaded papers"""
         if self._cached_suggestions is not None and self._knowledge_base_version == 0:
+            logger.debug("Returning cached research questions")
             return self._cached_suggestions
         
         papers_summary = self.get_papers_overview()
         if not papers_summary:
+            logger.warning("No papers available for generating research questions")
             self._cached_suggestions = []
             return self._cached_suggestions
         
@@ -144,11 +146,11 @@ ANSWER:"""
         for filename, info in papers_summary.items():
             paper_summary = f"Title: {info['title']}\nAuthors: {info['authors']}\nYear: {info['year']}\nSections: {', '.join(info['sections'])}\n"
             # Sample a few document chunks to get content insights (e.g., from Abstract or Introduction)
-            docs = [doc for doc in self.vector_store.documents if doc.metadata.get('source') == filename]
+            docs = [doc for doc in self.vector_store.documents if doc.metadata.get('source') == filename and doc.metadata.get('source')]
             if docs:
-                abstract_docs = [doc for doc in docs if doc.metadata.get('section') == 'Abstract'][:2]
+                abstract_docs = [doc for doc in docs if doc.metadata.get('section') == 'Abstract' or doc.metadata.get('section') == 'Introduction'][:2]
                 if abstract_docs:
-                    paper_summary += "Abstract Excerpt: " + " ".join([doc.page_content[:200] for doc in abstract_docs]) + "\n"
+                    paper_summary += "Content Excerpt: " + " ".join([doc.page_content[:200] for doc in abstract_docs]) + "\n"
             paper_summaries.append(paper_summary)
         
         context = "\n".join(paper_summaries) if paper_summaries else "No papers available."
@@ -160,19 +162,18 @@ INSTRUCTIONS:
 - Focus on questions that encourage comparison, analysis of methodologies, identification of research gaps, evaluation of results, or exploration of datasets and contributions.
 - Ensure questions are concise, academically rigorous, and tailored to the provided papers.
 - Avoid generic questions; make them specific to the papers' content or metadata (e.g., titles, authors, years, sections).
-- Format the output as a numbered list.
+- Format the output as a numbered list (e.g., 1. Question...).
 
 PAPER SUMMARIES:
 {context}
 
 OUTPUT:
-Generate a numbered list of 5-10 research questions.
 """
         
         try:
             config = types.GenerateContentConfig(
                 max_output_tokens=1000,
-                temperature=0.5,  # Slightly higher for creative question generation
+                temperature=0.5,
                 top_p=0.9
             )
             
@@ -184,16 +185,29 @@ Generate a numbered list of 5-10 research questions.
             
             # Parse the response into a list of questions
             questions = []
-            for line in response.text.split("\n"):
+            lines = response.text.split("\n")
+            for line in lines:
                 line = line.strip()
                 if line and line[0].isdigit() and "." in line:
                     question = line[line.find(".") + 1:].strip()
-                    if question:
+                    if question and question not in questions:  # Avoid duplicates
                         questions.append(question)
+                elif line and not line[0].isdigit() and any(kw in line.lower() for kw in ["question", "what", "how", "compare"]):
+                    # Handle cases where numbering might be missing
+                    questions.append(line.strip())
             
             self._cached_suggestions = questions[:10]  # Limit to 10 questions
+            if not self._cached_suggestions:
+                logger.warning("No valid questions generated, using fallback")
+                self._cached_suggestions = [
+                    "What methodologies are used across these papers?",
+                    "Compare the evaluation metrics used in these studies",
+                    "What datasets were used for experiments?",
+                    "What are the main contributions of each paper?",
+                    "Identify research gaps mentioned in the papers"
+                ]
             self._knowledge_base_version = 0  # Reset to allow caching until new papers are added
-            logger.info(f"Generated {len(self._cached_suggestions)} research questions")
+            logger.info(f"Generated {len(self._cached_suggestions)} research questions: {self._cached_suggestions}")
             return self._cached_suggestions
         
         except Exception as e:
@@ -204,5 +218,5 @@ Generate a numbered list of 5-10 research questions.
                 "What datasets were used for experiments?",
                 "What are the main contributions of each paper?",
                 "Identify research gaps mentioned in the papers"
-            ]  # Fallback to generic questions
+            ]
             return self._cached_suggestions
