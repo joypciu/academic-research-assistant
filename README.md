@@ -4,13 +4,13 @@
 [![Streamlit](https://img.shields.io/badge/streamlit-1.45.1-red.svg)](https://streamlit.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A sophisticated RAG (Retrieval-Augmented Generation) application designed to help researchers analyze, compare, and extract insights from academic papers using LangChain, FAISS, and Google's Gemma API.
+A sophisticated RAG (Retrieval-Augmented Generation) application designed to help researchers analyze, compare, and extract insights from academic papers using LangChain, FAISS, and Google's Gemini API.
 
 ## 🌟 Features
 
 - **Multi-Paper Analysis**: Upload and process multiple research papers simultaneously.
 - **Intelligent Chunking**: Preserves academic paper sections and context during text splitting.
-- **Advanced RAG Pipeline**: Combines semantic and keyword search for precise answers.
+- **RAG Pipeline**: Uses TF-IDF vector search for precise answers.
 - **Source Attribution**: Displays the paper and section for each response.
 - **Research-Specific Queries**: Supports methodology comparison, result analysis, and citation networks.
 - **Modern UI**: Clean, responsive Streamlit interface with a single, eye-friendly color scheme.
@@ -18,14 +18,14 @@ A sophisticated RAG (Retrieval-Augmented Generation) application designed to hel
 
 ## 🚀 Live Demo
 
-https://joy-academic-research-assistant.streamlit.app/
+[https://joy-academic-research-assistant.streamlit.app]
 
-### Prerequisites
+## 🛠️ Prerequisites
 
 - Python 3.12
-- Google Gemma API key (obtain from [Google AI](https://ai.google.dev/))
+- Google Gemini API key (obtain from [Google AI](https://ai.google.dev/))
 
-### Local Setup
+## 📦 Installation
 
 1. **Clone the repository**:
    ```bash
