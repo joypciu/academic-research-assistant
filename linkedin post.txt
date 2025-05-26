@@ -1,0 +1,10 @@
+I'm pleased to share my new project: the Academic Research Paper Assistant! 📚 This Streamlit app builds on my earlier Image Summary Generator and dives into academic research support.
+
+My first project called Image Summary Generator used Google's Gemma API to summarize images and answer follow-up questions. The Academic Research Paper Assistant goes further, enabling users to upload PDF research papers and query them with a Retrieval-Augmented Generation (RAG) pipeline. It uses FAISS for fast, scalable vector search to retrieve relevant paper sections, LangChain to orchestrate the RAG workflow, and PyPDF/Transformers for intelligent PDF processing and text analysis. Answers include citations to the exact paper and section, and the clean, Python-designed UI ensures ease of use for researchers and students.
+
+This project extends my work from image analysis to academic research, leveraging AI for precise, context-aware insights.
+
+Try it live: https://joy-academic-research-assistant.streamlit.app/
+
+
+#AI #Research #Streamlit #RAG #Python #MachineLearning

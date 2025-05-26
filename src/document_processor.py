@@ -4,7 +4,6 @@ from typing import List, Dict, Tuple
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 import logging
-import spacy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
@@ -17,13 +16,15 @@ class AcademicPaperProcessor:
             separators=["\n\n", "\n", ". ", " ", ""]
         )
         try:
+            import spacy
             self.nlp = spacy.load("en_core_web_sm")
+            logger.info("Loaded spaCy model for metadata extraction")
         except:
-            logger.warning("spaCy model not found. Install with: pip install spacy && python -m spacy download en_core_web_sm")
+            logger.warning("spaCy model not found. Falling back to regex-based metadata extraction. Install with: pip install spacy && python -m spacy download en_core_web_sm")
             self.nlp = None
     
     def extract_metadata_from_text(self, text: str) -> Dict:
-        """Extract paper metadata like title, authors, year using spaCy"""
+        """Extract paper metadata like title, authors, year using spaCy or regex"""
         metadata = {}
         
         # Extract title (first non-empty line in first 10 lines)
@@ -34,7 +35,7 @@ class AcademicPaperProcessor:
         year_match = re.search(r'(19|20)\d{2}', text[:2000])
         metadata['year'] = year_match.group() if year_match else "Unknown"
         
-        # Extract authors with spaCy
+        # Extract authors
         authors = []
         if self.nlp:
             doc = self.nlp(text[:1000])
@@ -49,6 +50,7 @@ class AcademicPaperProcessor:
                 authors.extend(matches[:3])
         metadata['authors'] = ', '.join(authors[:3]) if authors else "Unknown Authors"
         
+        logger.info(f"Extracted metadata: title={metadata['title'][:50]}..., year={metadata['year']}, authors={metadata['authors']}")
         return metadata
     
     def identify_sections(self, text: str) -> List[Tuple[str, int, int]]:
@@ -73,6 +75,7 @@ class AcademicPaperProcessor:
                 sections.append((section_name, match.start(), match.end()))
         
         sections.sort(key=lambda x: x[1])
+        logger.info(f"Identified {len(sections)} sections: {[s[0] for s in sections]}")
         return sections
     
     def process_pdf(self, pdf_file, filename: str) -> List[Document]:
@@ -137,4 +140,5 @@ class AcademicPaperProcessor:
                     documents.extend(docs)
                 except Exception as e:
                     logger.error(f"Error processing file {future_to_file[future]}: {str(e)}")
+        logger.info(f"Processed {len(documents)} total documents from {len(filenames)} files")
         return documents

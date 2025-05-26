@@ -43,7 +43,7 @@ def load_css():
         --card-bg: #FFFFFF;
         --meta-color: #6B7280;
         --expander-bg: #F8FAFC;
-        --expander-text: #1F2937;
+        --expander-text: #2F3437;
         --button-bg: #667EEA;
         --button-text: #FFFFFF;
         --accent-color: #667EEA;
@@ -56,29 +56,50 @@ def load_css():
         color: var(--text-color);
     }
 
-    .suggested-questions {
-        background: #F9FAFB;  /* Light gray background */
-        color: #1A1A1A;       /* Dark text */
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
+    /* Target the specific container for suggested questions */
+    .element-container:has(.suggested-questions) {
+        background: var(--card-bg) !important;
+        border-radius: 12px !important;
+        padding: 1.5rem !important;
+        margin: 1rem 0 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
     }
-    .suggested-questions h3 {
-        color: #667EEA;       /* Blue heading */
-        margin-bottom: 1rem;
+
+    /* Alternative approach - target by data-testid if available */
+    [data-testid="stVerticalBlock"] > div:has(.suggested-questions) {
+        background: var(--card-bg) !important;
+        border-radius: 12px !important;
+        padding: 1.5rem !important;
+        margin: 1rem 0 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
     }
-    .suggested-questions button {
-        background: #EFF6FF;  /* Light blue button */
-        color: #1F2937;       /* Dark gray text */
-        border: 1px solid #E5E7EB;
-        border-radius: 8px;
-        padding: 0.5rem 1rem;
-        margin: 0.25rem;
-        transition: all 0.3s ease;
+
+    /* Style the markdown container that holds suggested questions */
+    .suggested-questions-container {
+        background: var(--card-bg) !important;
+        border-radius: 12px !important;
+        padding: 1.5rem !important;
+        margin: 1rem 0 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
     }
-    .suggested-questions button:hover {
-        background: #DBEAFE;  /* Lighter blue on hover */
-        transform: translateY(-2px);
+
+    /* Style buttons within suggested questions */
+    .suggested-questions-container .stButton > button,
+    .element-container:has(.suggested-questions) .stButton > button {
+        background: #EFF6FF !important;
+        color: #1F2937 !important;
+        border: 1px solid #E5E7EB !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1rem !important;
+        margin: 0.25rem !important;
+        transition: all 0.3s ease !important;
+        width: 100% !important;
+    }
+
+    .suggested-questions-container .stButton > button:hover,
+    .element-container:has(.suggested-questions) .stButton > button:hover {
+        background: #DBEAFE !important;
+        transform: translateY(-2px) !important;
     }
 
     /* Main container */
@@ -209,8 +230,8 @@ def load_css():
         padding: 1rem;
         margin: 0.5rem 0;
         border-left: 3px solid var(--accent-color);
-        background: var(--card-bg);
         color: var(--text-color);
+        background: var(--card-bg);
     }
 
     .source-title {
@@ -236,6 +257,34 @@ def load_css():
         padding: 2rem;
     }
 
+    /* Clear chat button styling */
+    button[data-testid="baseButton-secondary"]:has-text("🧹 Clear Chat History"),
+    div[data-testid="stButton"] button:has-text("🧹 Clear Chat History") {
+        background: #F87171 !important;
+        color: #FFFFFF !important;
+        border: none !important;
+    }
+
+    button[data-testid="baseButton-secondary"]:has-text("🧹 Clear Chat History"):hover,
+    div[data-testid="stButton"] button:has-text("🧹 Clear Chat History"):hover {
+        background: #EF4444 !important;
+        color: #FFFFFF !important;
+        transform: translateY(-2px) !important;
+    }
+
+    /* Alternative approach using key-based targeting */
+    div[data-testid="stButton"] button[aria-label*="Clear Chat History"] {
+        background: #F87171 !important;
+        color: #FFFFFF !important;
+        border: none !important;
+    }
+
+    div[data-testid="stButton"] button[aria-label*="Clear Chat History"]:hover {
+        background: #EF4444 !important;
+        color: #FFFFFF !important;
+        transform: translateY(-2px) !important;
+    }
+
     /* Hide Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -243,7 +292,6 @@ def load_css():
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
-
 def initialize_session_state():
     """Initialize session state variables"""
     defaults = {
@@ -272,9 +320,9 @@ def create_rag_pipeline():
         st.error(f"❌ Error initializing RAG pipeline: {str(e)}")
         st.stop()
 
-def display_year_chart(papers_overview):
+def display_year_chart(papers_summary):
     """Display bar chart of publication years using Plotly"""
-    years = [paper['year'] for paper in papers_overview.values() if paper['year'] != 'Unknown']
+    years = [paper['year'] for paper in papers_summary.values() if paper['year'] != 'Unknown']
     if years:
         year_counts = pd.Series(years).value_counts().sort_index()
         df = pd.DataFrame({'Year': year_counts.index, 'Number of Papers': year_counts.values})
@@ -299,63 +347,75 @@ def display_paper_stats():
     if not st.session_state.processed_papers:
         return
     
-    papers_overview = st.session_state.rag_pipeline.get_papers_overview()
+    papers_summary = st.session_state.rag_pipeline.get_papers_summary()
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.markdown(f"""
-        <div class="metric-container">
-            <h3 style="color: var(--accent-color); margin: 0;">📄</h3>
-            <h2 style="margin: 0;">{len(papers_overview)}</h2>
-            <p style="color: var(--meta-color); margin: 0;">Papers Loaded</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div class="metric-container">
+                <h3 style="color: var(--accent-color); margin: 0;">Papers</h3>
+                <h2 style="margin: 0;">{len(papers_summary)}</h2>
+                <p style="color: var(--meta-color); margin: 0;">Papers Loaded</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     
     with col2:
-        total_chunks = sum(paper['chunk_count'] for paper in papers_overview.values())
-        st.markdown(f"""
-        <div class="metric-container">
-            <h3 style="color: #10b981; margin: 0;">🧩</h3>
-            <h2 style="margin: 0;">{total_chunks}</h2>
-            <p style="color: var(--meta-color); margin: 0;">Text Chunks</p>
-        </div>
-        """, unsafe_allow_html=True)
+        total_chunks = sum(paper['chunk_count'] for paper in papers_summary.values())
+        st.markdown(
+            f"""
+            <div class="metric-container">
+                <h3 style="color: #10b981; margin: 0;">Chunks</h3>
+                <h2 style="margin: 0;">{total_chunks}</h2>
+                <p style="color: var(--meta-color); margin: 0;">Text Chunks</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     
     with col3:
         all_sections = set()
-        for paper in papers_overview.values():
+        for paper in papers_summary.values():
             all_sections.update(paper['sections'])
-        st.markdown(f"""
-        <div class="metric-container">
-            <h3 style="color: #f59e0b; margin: 0;">📑</h3>
-            <h2 style="margin: 0;">{len(all_sections)}</h2>
-            <p style="color: var(--meta-color); margin: 0;">Unique Sections</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div class="metric-container">
+                <h3 style="color: #f59e0b; margin: 0;">Sections</h3>
+                <h2 style="margin: 0;">{len(all_sections)}</h2>
+                <p style="color: var(--meta-color); margin: 0;">Unique Sections</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     
     with col4:
-        years = set(paper['year'] for paper in papers_overview.values() if paper['year'] != 'Unknown')
-        st.markdown(f"""
-        <div class="metric-container">
-            <h3 style="color: #8b5cf6; margin: 0;">📅</h3>
-            <h2 style="margin: 0;">{len(years) if years else 1}</h2>
-            <p style="color: var(--meta-color); margin: 0;">Publication Years</p>
-        </div>
-        """, unsafe_allow_html=True)
+        years = set(paper['year'] for paper in papers_summary.values() if paper['year'] != 'Unknown')
+        st.markdown(
+            f"""
+            <div class="metric-container">
+                <h3 style="color: #8b5cf6; margin: 0;">Years</h3>
+                <h2 style="margin: 0;">{len(years) if years else 1}</h2>
+                <p style="color: var(--meta-color); margin: 0;">Publication Years</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     
-    display_year_chart(papers_overview)
+    display_year_chart(papers_summary)
 
 def display_papers_overview():
     """Display detailed overview of loaded papers"""
     if not st.session_state.processed_papers:
         return
     
-    papers_overview = st.session_state.rag_pipeline.get_papers_overview()
+    papers_summary = st.session_state.rag_pipeline.get_papers_summary()
     
     st.markdown("### 📚 Loaded Research Papers")
     
-    for filename, paper_info in papers_overview.items():
+    for filename, paper_info in papers_summary.items():
         with st.expander(f"📄 {paper_info['title'][:80]}...", expanded=False):
             col1, col2 = st.columns([2, 1])
             
@@ -378,6 +438,41 @@ def display_suggested_questions():
     st.markdown("### 💡 Suggested Research Questions")
     
     suggestions = st.session_state.rag_pipeline.suggest_research_questions()
+    
+    if not suggestions:
+        st.markdown("No relevant questions generated. Upload more papers to get suggestions.")
+        return
+    
+    # Add custom CSS specifically for this section
+    st.markdown("""
+    <style>
+    /* Override button styling for suggested questions */
+    div[data-testid="stHorizontalBlock"] button[kind="secondary"] {
+        background-color: #EFF6FF !important;
+        color: #1F2937 !important;
+        border: 1px solid #E5E7EB !important;
+        border-radius: 8px !important;
+    }
+    
+    div[data-testid="stHorizontalBlock"] button[kind="secondary"]:hover {
+        background-color: #DBEAFE !important;
+        color: #1F2937 !important;
+        border: 1px solid #BFDBFE !important;
+    }
+    
+    /* Target all buttons in this section */
+    div[data-testid="column"] > div > div > button {
+        background-color: #EFF6FF !important;
+        color: #1F2937 !important;
+        border: 1px solid #E5E7EB !important;
+    }
+    
+    div[data-testid="column"] > div > div > button:hover {
+        background-color: #DBEAFE !important;
+        color: #1F2937 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     cols = st.columns(2)
     for i, question in enumerate(suggestions):
@@ -490,24 +585,29 @@ def main():
             for i, uploaded_file in enumerate(uploaded_files):
                 if uploaded_file.name not in st.session_state.processed_papers:
                     status_text.text(f"Processing {uploaded_file.name}...")
+                    logger.info(f"Processing file: {uploaded_file.name}")
                     
                     documents = processor.process_pdf(uploaded_file, uploaded_file.name)
                     if documents:
                         all_documents.extend(documents)
                         st.session_state.processed_papers[uploaded_file.name] = len(documents)
                         processed_count += 1
+                        logger.info(f"Processed {uploaded_file.name}: {len(documents)} chunks")
+                    else:
+                        logger.warning(f"No documents extracted from {uploaded_file.name}")
                 
                 progress_bar.progress((i + 1) / len(uploaded_files))
             
             if all_documents:
                 status_text.text("Adding to knowledge base...")
                 rag_pipeline.add_papers(all_documents)
-                
+                logger.info(f"Added {len(all_documents)} documents to vector store")
                 st.success(f"✅ Processed {processed_count} new papers!")
                 time.sleep(1)
                 st.rerun()
             else:
                 st.warning("⚠️ No new papers to process.")
+                logger.warning("No documents added to vector store")
         
         # Clear button
         if st.session_state.processed_papers and st.button("🗑️ Clear All Papers", use_container_width=True, help="Clear all processed papers"):
@@ -515,6 +615,7 @@ def main():
             st.session_state.processed_papers = {}
             st.session_state.chat_history = []
             st.success("🧹 Knowledge base cleared!")
+            logger.info("Cleared knowledge base")
             time.sleep(1)
             st.rerun()
         
@@ -606,12 +707,13 @@ def main():
             })
             
             with st.spinner("🔍 Analyzing papers and generating response..."):
-                filter_section = search_sections[0] if len(search_sections) == 1 else None
+                filter_section = None
                 result = rag_pipeline.query(
                     user_question, 
                     k=num_sources,
                     filter_section=filter_section
                 )
+                logger.info(f"Query result: {result['retrieved_chunks']} chunks retrieved for '{user_question}'")
             
             st.session_state.chat_history.append({
                 "type": "assistant",
@@ -623,9 +725,14 @@ def main():
             
             st.rerun()
         
-        if st.session_state.chat_history and st.button("🧹 Clear Chat History", help="Clear all chat messages"):
-            st.session_state.chat_history = []
-            st.rerun()
+   # Clear chat history button with proper styling
+    if st.session_state.chat_history:
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col2:  # Center the button
+            if st.button("🧹 Clear Chat History", help="Clear all chat messages", key="clear_chat_btn"):
+                st.session_state.chat_history = []
+                st.rerun()
+
     
     # Footer
     st.markdown("---")

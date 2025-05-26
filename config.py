@@ -10,7 +10,7 @@ class AppConfig:
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
     
     # Model Configuration
-    embedding_model: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+    embedding_model: str = "tfidf"  # Changed to tfidf
     gemini_model: str = "gemma-3-12b-it"
     
     # Text Processing

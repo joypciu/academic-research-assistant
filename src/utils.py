@@ -57,18 +57,18 @@ def export_chat_history(chat_history: List[Dict[str, Any]]) -> str:
     }
     return json.dumps(export_data, indent=2)
 
-@st.cache_data
-def load_sample_questions() -> List[str]:
-    """Load sample research questions"""
-    return [
-        "What methodologies are used across these papers?",
-        "Compare the evaluation metrics used in these studies",
-        "What datasets were used for experiments?",
-        "What are the main contributions of each paper?",
-        "Identify research gaps mentioned in the papers",
-        "Compare performance results across different approaches",
-        "What are the common limitations discussed?",
-        "How do the related work sections compare?",
-        "What future work is suggested in these papers?",
-        "Which papers cite similar prior work?"
-    ]
+#@st.cache_data
+# def load_sample_questions() -> List[str]:
+#     """Load sample research questions"""
+#     return [
+#         "What methodologies are used across these papers?",
+#         "Compare the evaluation metrics used in these studies",
+#         "What datasets were used for experiments?",
+#         "What are the main contributions of each paper?",
+#         "Identify research gaps mentioned in the papers",
+#         "Compare performance results across different approaches",
+#         "What are the common limitations discussed?",
+#         "How do the related work sections compare?",
+#         "What future work is suggested in these papers?",
+#         "Which papers cite similar prior work?"
+#     ]
